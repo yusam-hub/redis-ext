@@ -110,6 +110,46 @@ class RedisExt
     }
 
     /**
+     * @param string $key
+     * @param int $expire
+     * @param \Closure $value
+     * @param bool $useCache //for debug use or not use cache
+     * @param bool $freshKey //for debug (always clean key)
+     * @return mixed
+     */
+    public function returnScalarOrArray(string $key, int $expire, \Closure $value, bool $useCache = true, bool $freshKey = false)
+    {
+        if ($freshKey) {
+            $this->del($key);
+        }
+
+        if ($useCache) {
+            if (!$this->has($key)) {
+                $val = $value();
+                if (!(is_scalar($val) || is_array($val))) {
+                    throw new \RuntimeException("Invalid value");
+                }
+                if (!$this->put($key, $val, $expire)) {
+                    throw new \RuntimeException("Unable to put value");
+                }
+                return $val;
+            }
+
+            $val = $this->get($key);
+
+            if (is_scalar($val) || is_array($val)) {
+                return $val;
+            }
+        }
+
+        $val = $value();
+        if (!(is_scalar($val) || is_array($val))) {
+            throw new \RuntimeException("Invalid value");
+        }
+        return $val;
+    }
+
+    /**
      * @param string $queue
      * @param mixed $value
      * @return null|int
