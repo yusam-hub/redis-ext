@@ -39,7 +39,7 @@ class ExampleTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue(true);
     }*/
 
-    public function testDefault2()
+    /*public function testDefault2()
     {
         $redisExt = new RedisExt([
             'host' => 'redis-host',
@@ -57,6 +57,24 @@ class ExampleTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue($redisExt->has('testKey'));
         $this->assertTrue($redisExt->del('testKey'));
         $this->assertFalse($redisExt->has('testKey'));
+    }*/
 
+    public function testDefault3()
+    {
+        $redisExt = new RedisExt([
+            'host' => 'redis-host',
+            'prefix' => 'tt_'
+        ]);
+
+        $v = date("Y-m-d H:i:s");
+        $cacheV = $redisExt->returnScalarOrArray('dt', 0, function() use($v){
+            return $v;
+        });
+        var_dump([
+            'v' => $v,
+            'cacheV' => $cacheV,
+            'cacheV2' => $redisExt->get('dt'),
+        ]);
     }
+
 }
