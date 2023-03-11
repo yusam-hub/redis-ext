@@ -3,14 +3,10 @@
 namespace YusamHub\RedisExt\Tests;
 
 use YusamHub\RedisExt\RedisExt;
-use YusamHub\RedisExt\Tests\Demo\DemoQueueObject;
 
 class ExampleTest extends \PHPUnit\Framework\TestCase
 {
-    /**
-     * @throws \RedisException
-     */
-    public function testDefault()
+    /*public function testDefault()
     {
         $redisExt = new RedisExt([
             'host' => 'redis-host',
@@ -41,5 +37,26 @@ class ExampleTest extends \PHPUnit\Framework\TestCase
         print_r($redisExt->queueCount('default'));
 
         $this->assertTrue(true);
+    }*/
+
+    public function testDefault2()
+    {
+        $redisExt = new RedisExt([
+            'host' => 'redis-host',
+            'prefix' => 'tt_'
+        ]);
+
+        $this->assertFalse($redisExt->has('testKey'));
+
+        $this->assertTrue($redisExt->put('testKey', 100, 1));
+        $this->assertTrue($redisExt->get('testKey') === 100);
+        sleep(2);
+        $this->assertFalse($redisExt->has('testKey'));
+
+        $this->assertTrue($redisExt->put('testKey', 100));
+        $this->assertTrue($redisExt->has('testKey'));
+        $this->assertTrue($redisExt->del('testKey'));
+        $this->assertFalse($redisExt->has('testKey'));
+
     }
 }

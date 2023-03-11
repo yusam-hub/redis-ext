@@ -11,16 +11,19 @@ class RedisExt
 
     /**
      * @param array $config
-     * @throws \RedisException
      */
     public function __construct(array $config = [])
     {
-        $this->redis = new \Redis();
-        $this->redis->connect($config['host']??'localhost', $config['port']??6379);
-        $this->redis->select($config['dbIndex']??0);
-        $this->redis->setOption(\Redis::OPT_PREFIX, $config['prefix']??'');
-        $this->redis->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_JSON);
-        $this->redis->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_PHP);
+        try {
+            $this->redis = new \Redis();
+            $this->redis->connect($config['host']??'localhost', $config['port']??6379);
+            $this->redis->select($config['dbIndex']??0);
+            $this->redis->setOption(\Redis::OPT_PREFIX, $config['prefix']??'');
+            $this->redis->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_JSON);
+            $this->redis->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_PHP);
+        } catch (\RedisException $e) {
+            throw new \RuntimeException($e->getMessage(), $e->getCode(), $e);
+        }
     }
 
     /**
@@ -32,39 +35,129 @@ class RedisExt
     }
 
     /**
-     * @param string $queue
-     * @param object $value
-     * @return false|int|\Redis
-     * @throws \RedisException
+     * @param string $key
+     * @param mixed $default
+     * @return mixed
      */
-    public function queuePush(string $queue, object $value)
+    public function get(string $key, $default = null)
     {
-        return $this->redis->rPush(sprintf("q_%s",$queue), serialize($value));
+        try {
+            $result = $this->redis->get($key);
+        } catch (\RedisException $e) {
+            $result = false;
+        }
+        if (is_string($result)) {
+            return unserialize($result);
+        }
+        return $default;
+    }
+
+    /**
+     * @param string $key
+     * @param $value
+     * @param int $expire
+     * @return bool
+     */
+    public function put(string $key, $value, int $expire = 0): bool
+    {
+        try {
+            if ($expire > 0) {
+                $result = $this->redis->setex($key, $expire, serialize($value));
+            } else {
+                $result = $this->redis->set($key, serialize($value));
+            }
+            if (is_bool($result)) {
+                return $result;
+            }
+            return false;
+        } catch (\RedisException $e) {
+            return false;
+        }
+    }
+
+    /**
+     * @param string $key
+     * @return bool
+     */
+    public function has(string $key): bool
+    {
+        try {
+            $result = $this->redis->exists($key);
+            if (is_int($result)) {
+                return $result === 1;
+            }
+            return false;
+        } catch (\RedisException $e) {
+            return false;
+        }
+    }
+
+    /**
+     * @param string $key
+     * @return bool
+     */
+    public function del(string $key): bool
+    {
+        try {
+            $result = $this->redis->del($key);
+            if (is_int($result)) {
+                return $result === 1;
+            }
+            return false;
+        } catch (\RedisException $e) {
+            return false;
+        }
     }
 
     /**
      * @param string $queue
-     * @return object|null
-     * @throws \RedisException
+     * @param mixed $value
+     * @return null|int
      */
-    public function queueShift(string $queue): ?object
+    public function queuePush(string $queue, $value): int
     {
-        $serializeData = $this->redis->lPop(sprintf("q_%s",$queue));
+        try {
+            $result = $this->redis->rPush(sprintf("q_%s",$queue), serialize($value));
+            if (is_int($result)) {
+                return $result;
+            }
+            return 0;
+        } catch (\RedisException $e) {
+            return 0;
+        }
+    }
 
-        if ($serializeData === false) {
+    /**
+     * @param string $queue
+     * @return mixed|null
+     */
+    public function queueShift(string $queue)
+    {
+        try {
+            $serializeData = $this->redis->lPop(sprintf("q_%s", $queue));
+            if (is_string($serializeData)) {
+                return unserialize($serializeData);
+            }
+            return null;
+        } catch (\RedisException $e) {
             return null;
         }
-
-        return unserialize($serializeData);
     }
 
     /**
      * @param string $queue
      * @return int
-     * @throws \RedisException
      */
     public function queueCount(string $queue): int
     {
-        return intval($this->redis->lLen(sprintf("q_%s",$queue)));
+        try {
+            $result =$this->redis->lLen(sprintf("q_%s",$queue));
+            if (is_int($result)) {
+                return $result;
+            }
+            return 0;
+        } catch (\RedisException $e) {
+            return 0;
+        }
     }
 }
