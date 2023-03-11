@@ -4,10 +4,13 @@ namespace YusamHub\RedisExt;
 
 class RedisExt
 {
+    public bool $isDebugging = false;
     /**
      * @var \Redis
      */
     protected \Redis $redis;
+
+    protected ?\Closure $onDebugLogCallback = null;
 
     /**
      * @param array $config
@@ -24,6 +27,37 @@ class RedisExt
         } catch (\RedisException $e) {
             throw new \RuntimeException($e->getMessage(), $e->getCode(), $e);
         }
+    }
+
+    /**
+     * @param \Closure|null $callback
+     * @return void
+     */
+    public function onDebugLogCallback(?\Closure $callback): void
+    {
+        $this->onDebugLogCallback = $callback;
+    }
+
+    /**
+     * @param string $message
+     * @param array $context
+     * @return void
+     */
+    protected function debugLog(string $message, array $context = []): void
+    {
+        if (!$this->isDebugging) return;
+
+        if (!is_null($this->onDebugLogCallback)) {
+            $callback = $this->onDebugLogCallback;
+            $callback($message, $context);
+            return;
+        }
+
+        echo $message;
+        if (!empty($context)) {
+            echo json_encode($context, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        }
+        echo PHP_EOL;
     }
 
     /**
@@ -46,8 +80,19 @@ class RedisExt
         } catch (\RedisException $e) {
             $result = false;
         }
+
         if (is_string($result)) {
-            return unserialize($result);
+
+            $val = unserialize($result);
+
+            $this->debugLog("GET", [
+                'val' => is_object($val) ? (array) $val : $val,
+                'is_scalar' => is_scalar($val),
+                'is_array' => is_array($val),
+                'is_object' => is_object($val),
+            ]);
+
+            return $val;
         }
         return $default;
     }
@@ -136,13 +181,18 @@ class RedisExt
             }
 
             $val = $this->get($key);
-
+            if (is_object($val)) {
+                $val = (array) $val;
+            }
             if (is_scalar($val) || is_array($val)) {
                 return $val;
             }
         }
 
         $val = $value();
+        if (is_object($val)) {
+            $val = (array) $val;
+        }
         if (!(is_scalar($val) || is_array($val))) {
             throw new \RuntimeException("Invalid value");
         }
