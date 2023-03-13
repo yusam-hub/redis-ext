@@ -100,14 +100,14 @@ class RedisExt
     /**
      * @param string $key
      * @param $value
-     * @param int $expire
+     * @param int $ttl
      * @return bool
      */
-    public function put(string $key, $value, int $expire = 0): bool
+    public function put(string $key, $value, int $ttl = 0): bool
     {
         try {
-            if ($expire > 0) {
-                $result = $this->redis->setex($key, $expire, serialize($value));
+            if ($ttl > 0) {
+                $result = $this->redis->setex($key, $ttl, serialize($value));
             } else {
                 $result = $this->redis->set($key, serialize($value));
             }
@@ -156,13 +156,13 @@ class RedisExt
 
     /**
      * @param string $key
-     * @param int $expire
+     * @param int $ttl
      * @param \Closure $value
      * @param bool $useCache //for debug use or not use cache
      * @param bool $freshKey //for debug (always clean key)
      * @return mixed
      */
-    public function returnScalarOrArray(string $key, int $expire, \Closure $value, bool $useCache = true, bool $freshKey = false)
+    public function returnScalarOrArray(string $key, int $ttl, \Closure $value, bool $useCache = true, bool $freshKey = false)
     {
         if ($freshKey) {
             $this->del($key);
@@ -174,7 +174,7 @@ class RedisExt
                 if (!(is_scalar($val) || is_array($val))) {
                     throw new \RuntimeException("Invalid value");
                 }
-                if (!$this->put($key, $val, $expire)) {
+                if (!$this->put($key, $val, $ttl)) {
                     throw new \RuntimeException("Unable to put value");
                 }
                 return $val;
