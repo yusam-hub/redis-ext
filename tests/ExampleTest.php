@@ -3,15 +3,16 @@
 namespace YusamHub\RedisExt\Tests;
 
 use YusamHub\RedisExt\RedisExt;
+use YusamHub\RedisExt\Tests\Demo\DemoQueueObject;
 
 class ExampleTest extends \PHPUnit\Framework\TestCase
 {
-    /*public function testDefault()
+    /**
+     * @throws \RedisException
+     */
+    public function testDefault()
     {
-        $redisExt = new RedisExt([
-            'host' => 'redis-host',
-            'prefix' => 'tt_'
-        ]);
+        $redisExt = new RedisExt(include __DIR__ . "/../config/config.php");
 
         print_r([
             'prefix' => $redisExt->redis()->_prefix(""),
@@ -37,14 +38,11 @@ class ExampleTest extends \PHPUnit\Framework\TestCase
         print_r($redisExt->queueCount('default'));
 
         $this->assertTrue(true);
-    }*/
+    }
 
-    /*public function testDefault2()
+    public function testDefault2()
     {
-        $redisExt = new RedisExt([
-            'host' => 'redis-host',
-            'prefix' => 'tt_'
-        ]);
+        $redisExt = new RedisExt(include __DIR__ . "/../config/config.php");
 
         $this->assertFalse($redisExt->has('testKey'));
 
@@ -57,14 +55,11 @@ class ExampleTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue($redisExt->has('testKey'));
         $this->assertTrue($redisExt->del('testKey'));
         $this->assertFalse($redisExt->has('testKey'));
-    }*/
+    }
 
     public function testDefault3()
     {
-        $redisExt = new RedisExt([
-            'host' => 'redis-host',
-            'prefix' => 'tt_'
-        ]);
+        $redisExt = new RedisExt(include __DIR__ . "/../config/config.php");
 
         $v = date("Y-m-d H:i:s");
         $cacheV = $redisExt->returnScalarOrArray('dt', 0, function() use($v){
@@ -75,6 +70,7 @@ class ExampleTest extends \PHPUnit\Framework\TestCase
             'cacheV' => $cacheV,
             'cacheV2' => $redisExt->get('dt'),
         ]);
+        $this->assertTrue(true);
     }
 
 }
